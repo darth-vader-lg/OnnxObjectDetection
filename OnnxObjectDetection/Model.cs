@@ -10,10 +10,6 @@ namespace OnnxObjectDetection
    {
       #region Fields
       /// <summary>
-      /// Nomi delle classi
-      /// </summary>
-      private readonly string[] classesNames;
-      /// <summary>
       /// Altezza immagine
       /// </summary>
       private readonly int imageHeight;
@@ -61,14 +57,12 @@ namespace OnnxObjectDetection
       /// </summary>
       /// <param name="mlContext">Contesto di machine learning</param>
       /// <param name="modelPath">Posizione del modello onnx</param>
-      /// <param name="classesNames">Nomi delle classi</param>
       /// <param name="imageWidth">Larghezza delle immagini del modello</param>
       /// <param name="imageHeight">Altezza delle immagini del modello</param>
-      public Model(MLContext mlContext, string modelPath, string[] classesNames, int imageWidth = 640, int imageHeight = 640)
+      public Model(MLContext mlContext, string modelPath, int imageWidth = 640, int imageHeight = 640)
       {
          this.mlContext = mlContext;
          this.modelPath = modelPath;
-         this.classesNames = classesNames;
          this.imageWidth = imageWidth;
          this.imageHeight = imageHeight;
       }
@@ -93,27 +87,11 @@ namespace OnnxObjectDetection
          // Crea una dataview per ottenere lo schema di dati di input
          var data = mlContext.Data.LoadFromEnumerable(new List<PredictionData>());
          // Definisce la pipeline
-         var pipeline = mlContext.Transforms.ResizeImages(inputColumnName: "bitmap", outputColumnName: "image", imageWidth: imageWidth, imageHeight: imageHeight, resizing: ResizingKind.Fill)
-             .Append(mlContext.Transforms.ExtractPixels(outputColumnName: "images", inputColumnName: "image", scaleImage: 1f / 255f, interleavePixelColors: false))
-             .Append(mlContext.Transforms.ApplyOnnxModel(
-                 shapeDictionary: new Dictionary<string, int[]>()
-                 {
-                     { "images", new[] { 1, 3, imageWidth, imageHeight } },
-                     { "output1", new[] { 1, 3, 80, 80, 5 + classesNames.Length } },
-                     { "output2", new[] { 1, 3, 40, 40, 5 + classesNames.Length } },
-                     { "output3", new[] { 1, 3, 20, 20, 5 + classesNames.Length } },
-                 },
-                 inputColumnNames: new[]
-                 {
-                     "images"
-                 },
-                 outputColumnNames: new[]
-                 {
-                     "output1",
-                     "output2",
-                     "output3"
-                 },
-                 modelFile: modelPath));
+         var pipeline = mlContext.Transforms
+            .LoadImages(outputColumnName: "bitmap", imageFolder: "", inputColumnName: "ImagePath")
+            .Append(mlContext.Transforms.ResizeImages(inputColumnName: "bitmap", outputColumnName: "image", imageWidth: imageWidth, imageHeight: imageHeight, resizing: ResizingKind.Fill))
+            .Append(mlContext.Transforms.ExtractPixels(outputColumnName: "images", inputColumnName: "image", scaleImage: 1f / 255f, interleavePixelColors: false))
+            .Append(mlContext.Transforms.ApplyOnnxModel(inputColumnNames: new[] { "images" }, outputColumnNames: new[] { "output1", "output2", "output3" }, modelFile: modelPath));
          // Ottiene il modello di trasformazione
          var model = pipeline.Fit(data);
          return model;

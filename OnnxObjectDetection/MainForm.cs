@@ -37,10 +37,8 @@ namespace OnnxObjectDetection
          if (openFileDialog.ShowDialog(this) != DialogResult.OK)
             return;
          var bmp = new Bitmap(Image.FromFile(openFileDialog.FileName));
-         var prediction = model.Predictor.Predict(new PredictionData { Image = bmp });
+         var prediction = model.Predictor.Predict(new PredictionData { ImagePath = openFileDialog.FileName });
          DrawObjectOnBitmap(bmp, prediction.GetResults());
-
-
          pictureBox.Image = bmp;
       }
       /// <summary>
@@ -51,7 +49,7 @@ namespace OnnxObjectDetection
       private static void DrawObjectOnBitmap(Bitmap bmp, IEnumerable<PredictionResult.Result> results)
       {
          var categories = new[] { "Carp" };
-         using var graphic = Graphics.FromImage(bmp); graphic.SmoothingMode = SmoothingMode.AntiAlias;
+         using var graphic = Graphics.FromImage(bmp);
          foreach (var result in results) {
             var rect = new Rectangle(
                (int)(result.Box.Left),
@@ -59,6 +57,7 @@ namespace OnnxObjectDetection
                (int)(result.Box.Width),
                (int)(result.Box.Height));
             using var pen = new Pen(Color.Lime, Math.Max(Math.Min(rect.Width, rect.Height) / 320f, 1f));
+            graphic.SmoothingMode = SmoothingMode.AntiAlias;
             graphic.DrawRectangle(pen, rect);
             var fontSize = Math.Min(bmp.Size.Width, bmp.Size.Height) / 40f;
             fontSize = Math.Max(fontSize, 8f);
@@ -69,6 +68,7 @@ namespace OnnxObjectDetection
             var size = graphic.MeasureString(text, font);
             using var brush = new SolidBrush(Color.FromArgb(50, Color.Lime));
             graphic.FillRectangle(brush, p.X, p.Y, size.Width, size.Height);
+            graphic.SmoothingMode = SmoothingMode.None;
             graphic.DrawString(text, font, Brushes.Black, p);
          }
       }
@@ -80,12 +80,7 @@ namespace OnnxObjectDetection
       {
          base.OnLoad(e);
          var ml = new MLContext();
-         model = new(
-            ml,
-            Path.Combine("..", "..", "..", "carp.onnx"),
-            new[] { "Carp" },
-            640,
-            640);
+         model = new(ml, Path.Combine("..", "..", "..", "carp.onnx"), 640, 640);
       }
       #endregion
    }
