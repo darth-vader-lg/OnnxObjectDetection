@@ -10,7 +10,7 @@ namespace OnnxObjectDetection
       /// La bitmap
       /// </summary>
       [ColumnName("bitmap")]
-      [ImageType(640, 640)] //@@@ Vedere se si puo eleminare
+      [ImageType(640, 640)]
       public Bitmap Image { get; set; }
       /// <summary>
       /// Larghezza immagine

@@ -1,14 +1,9 @@
 ﻿using Microsoft.ML;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace OnnxObjectDetection
@@ -43,7 +38,9 @@ namespace OnnxObjectDetection
             return;
          var bmp = new Bitmap(Image.FromFile(openFileDialog.FileName));
          var prediction = model.Predictor.Predict(new PredictionData { Image = bmp });
-         DrawObjectOnBitmap(bmp, prediction.GetResults(new[] { "Carp" }, bmp));
+         DrawObjectOnBitmap(bmp, prediction.GetResults());
+
+
          pictureBox.Image = bmp;
       }
       /// <summary>
@@ -53,6 +50,7 @@ namespace OnnxObjectDetection
       /// <param name="results">Risultati</param>
       private static void DrawObjectOnBitmap(Bitmap bmp, IEnumerable<PredictionResult.Result> results)
       {
+         var categories = new[] { "Carp" };
          using var graphic = Graphics.FromImage(bmp); graphic.SmoothingMode = SmoothingMode.AntiAlias;
          foreach (var result in results) {
             var rect = new Rectangle(
@@ -67,7 +65,7 @@ namespace OnnxObjectDetection
             fontSize = Math.Min(fontSize, rect.Height);
             using var font = new Font("Verdana", fontSize, GraphicsUnit.Pixel);
             var p = new Point(rect.Left, rect.Top);
-            var text = $"{result.Label}:{(int)(result.Confidence * 100)}";
+            var text = $"{categories[result.Category]}:{(int)(result.Confidence * 100)}";
             var size = graphic.MeasureString(text, font);
             using var brush = new SolidBrush(Color.FromArgb(50, Color.Lime));
             graphic.FillRectangle(brush, p.X, p.Y, size.Width, size.Height);

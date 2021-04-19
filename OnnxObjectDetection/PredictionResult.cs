@@ -1,4 +1,5 @@
 ﻿using Microsoft.ML.Data;
+using Microsoft.ML.Transforms.Image;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -28,6 +29,12 @@ namespace OnnxObjectDetection
       [ColumnName("output3")]
       public float[] Output3 { get; set; }
       /// <summary>
+      /// Bitmap ridimensionato
+      /// </summary>
+      [ColumnName("image")]
+      [ImageType(640, 640)]
+      public Bitmap Image { get; set; }
+      /// <summary>
       /// Larghezza immagine
       /// </summary>
       [ColumnName("width")]
@@ -43,16 +50,15 @@ namespace OnnxObjectDetection
       /// Parses net output to predictions.
       /// </summary>
       /// <param name="categories">Elenco di categorie</param>
-      /// <param name="image">Immagine</param>
       /// <param name="confidence">Accuratezza minima della previsione</param>
       /// <param name="perCategoryConfidence">Accuratezza minima per categoria</param>
       /// <param name="nmsOverlapRatio">Filtro per la rimozione delle previsioni sovrapposte (rapporto fra le aree di sovrapposizione)</param>
-      public IReadOnlyList<Result> GetResults(string[] categories, Image image, float confidence = 0.2f, float perCategoryConfidence = 0.25f, float nmsOverlapRatio = 0.45f)
+      public IReadOnlyList<Result> GetResults(float confidence = 0.2f, float perCategoryConfidence = 0.25f, float nmsOverlapRatio = 0.45f)
       {
          // Risultato
          var results = new List<Result>();
          // Fattori di scala
-         var (xGain, yGain) = (640f/*@@@ Vedere se usare ImageWidth*/ / image.Width, 640f / image.Height);
+         var (xGain, yGain) = (Image.Width / ImageWidth, Image.Height / ImageHeight);
          // Elenco di output del modello
          var outputs = new[] { Output1, Output2, Output3 };
          // Shapes dei singoli otuput
@@ -65,7 +71,7 @@ namespace OnnxObjectDetection
              new float[][] { new float[] { 116f, 90f }, new float[] { 156f, 198f }, new float[] { 373f, 326f } }
          };
          // Dimensione di ogni previsione
-         var dimension = 5 + categories.Length;
+         var dimension = Output1.Length / (80 * 80 * 3);
          // Stride per ciascuna shape
          var strides = new float[] { 8f, 16f, 32f };
          // Loop sugli output
@@ -109,7 +115,7 @@ namespace OnnxObjectDetection
                      var xMax = (rawX + rawW / 2f) / xGain;
                      var yMax = (rawY + rawH / 2f) / yGain;
                      // Crea il risultato
-                     var result = new Result(new RectangleF(xMin, yMin, xMax - xMin, yMax - yMin), categories[scores.IndexOf(max)], max);
+                     var result = new Result(new RectangleF(xMin, yMin, xMax - xMin, yMax - yMin), scores.IndexOf(max), max);
                      results.Add(result);
                   }
                }
@@ -169,19 +175,19 @@ namespace OnnxObjectDetection
          /// <summary>
          /// Categoria
          /// </summary>
-         public string Label { get; }
+         public int Category { get; }
          #endregion
          #region Methods
          /// <summary>
          /// Costruttore
          /// </summary>
          /// <param name="box">Bounding box</param>
-         /// <param name="label">Label</param>
+         /// <param name="category">Categoria</param>
          /// <param name="confidence">Punteggio</param>
-         public Result(RectangleF box, string label, float confidence)
+         public Result(RectangleF box, int category, float confidence)
          {
             Box = box;
-            Label = label;
+            Category = category;
             Confidence = confidence;
          }
          #endregion

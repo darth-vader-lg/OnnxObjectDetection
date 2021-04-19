@@ -1,11 +1,12 @@
 ﻿using Microsoft.ML;
+using Microsoft.ML.Data;
 using System.Collections.Generic;
 using System.Linq;
 using static Microsoft.ML.Transforms.Image.ImageResizingEstimator;
 
 namespace OnnxObjectDetection
 {
-   class Model
+   class Model : ITransformer
    {
       #region Fields
       /// <summary>
@@ -39,14 +40,17 @@ namespace OnnxObjectDetection
       #endregion
       #region Properties
       /// <summary>
+      /// Indicatore di RowToRowMapper
+      /// </summary>
+      public bool IsRowToRowMapper => (model ??= LoadModel()).IsRowToRowMapper;
+      /// <summary>
       /// Predictor
       /// </summary>
       public PredictionEngine<PredictionData, PredictionResult> Predictor
       {
          get
          {
-            model ??= LoadModel();
-            predictor ??= mlContext.Model.CreatePredictionEngine<PredictionData, PredictionResult>(model);
+            predictor ??= mlContext.Model.CreatePredictionEngine<PredictionData, PredictionResult>(model ??= LoadModel());
             return predictor;
          }
       }
@@ -69,6 +73,18 @@ namespace OnnxObjectDetection
          this.imageHeight = imageHeight;
       }
       /// <summary>
+      /// Restituisce lo schema di output
+      /// </summary>
+      /// <param name="inputSchema">Schema di input</param>
+      /// <returns></returns>
+      public DataViewSchema GetOutputSchema(DataViewSchema inputSchema) => (model ??= LoadModel()).GetOutputSchema(inputSchema);
+      /// <summary>
+      /// Restituisce il mapper riga a riga
+      /// </summary>
+      /// <param name="inputSchema">Schema di input</param>
+      /// <returns>Il mapper</returns>
+      public IRowToRowMapper GetRowToRowMapper(DataViewSchema inputSchema) => (model ??= LoadModel()).GetRowToRowMapper(inputSchema);
+      /// <summary>
       /// Carica il modello onnx
       /// </summary>
       /// <returns>Il modello di trasformazione</returns>
@@ -77,8 +93,8 @@ namespace OnnxObjectDetection
          // Crea una dataview per ottenere lo schema di dati di input
          var data = mlContext.Data.LoadFromEnumerable(new List<PredictionData>());
          // Definisce la pipeline
-         var pipeline = mlContext.Transforms.ResizeImages(inputColumnName: "bitmap", outputColumnName: "images", imageWidth: imageWidth, imageHeight: imageHeight, resizing: ResizingKind.Fill)
-             .Append(mlContext.Transforms.ExtractPixels(outputColumnName: "images", scaleImage: 1f / 255f, interleavePixelColors: false))
+         var pipeline = mlContext.Transforms.ResizeImages(inputColumnName: "bitmap", outputColumnName: "image", imageWidth: imageWidth, imageHeight: imageHeight, resizing: ResizingKind.Fill)
+             .Append(mlContext.Transforms.ExtractPixels(outputColumnName: "images", inputColumnName: "image", scaleImage: 1f / 255f, interleavePixelColors: false))
              .Append(mlContext.Transforms.ApplyOnnxModel(
                  shapeDictionary: new Dictionary<string, int[]>()
                  {
@@ -102,6 +118,17 @@ namespace OnnxObjectDetection
          var model = pipeline.Fit(data);
          return model;
       }
+      /// <summary>
+      /// Effettua il salvataggio del modello
+      /// </summary>
+      /// <param name="ctx">Contesto di salvataggio</param>
+      public void Save(ModelSaveContext ctx) => (model ??= LoadModel()).Save(ctx);
+      /// <summary>
+      /// Effettua la trasformazione di dati
+      /// </summary>
+      /// <param name="input">Dati di ingresso</param>
+      /// <returns>I dati trasformati</returns>
+      public IDataView Transform(IDataView input) => (model ??= LoadModel()).Transform(input);
       #endregion
    }
 }
