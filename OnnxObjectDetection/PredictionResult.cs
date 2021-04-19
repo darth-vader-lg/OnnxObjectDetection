@@ -109,7 +109,7 @@ namespace OnnxObjectDetection
                      var xMax = (rawX + rawW / 2f) / xGain;
                      var yMax = (rawY + rawH / 2f) / yGain;
                      // Crea il risultato
-                     var result = new Result(new[] { xMin, yMin, xMax - xMin, yMax - yMin }, categories[scores.IndexOf(max)], max);
+                     var result = new Result(new RectangleF(xMin, yMin, xMax - xMin, yMax - yMin), categories[scores.IndexOf(max)], max);
                      results.Add(result);
                   }
                }
@@ -131,10 +131,9 @@ namespace OnnxObjectDetection
             foreach (var current in results.ToList()) {
                if (current == item)
                   continue;
-               var (rect1, rect2) = (new RectangleF(item.BBox[0], item.BBox[1], item.BBox[2], item.BBox[3]), new RectangleF(current.BBox[0], current.BBox[1], current.BBox[2], current.BBox[3]));
-               var intersection = RectangleF.Intersect(rect1, rect2);
+               var intersection = RectangleF.Intersect(item.Box, current.Box);
                var intArea = intersection.Width * intersection.Height;
-               var unionArea = rect1.Width * rect1.Height + rect2.Width * rect2.Height - intArea;
+               var unionArea = item.Box.Width * item.Box.Height + current.Box.Width * current.Box.Height - intArea;
                var overlap = intArea / unionArea;
                if (overlap > nmsOverlapRatio) {
                   if (item.Confidence > current.Confidence)
@@ -160,16 +159,15 @@ namespace OnnxObjectDetection
       {
          #region Properties
          /// <summary>
-         /// x1, y1, x2, y2 in page coordinates.
-         /// <para>left, top, right, bottom.</para>
+         /// Box della previsione
          /// </summary>
-         public float[] BBox { get; }
+         public RectangleF Box { get; }
          /// <summary>
-         /// Confidence level.
+         /// Accuratezza
          /// </summary>
          public float Confidence { get; }
          /// <summary>
-         /// The Bbox category.
+         /// Categoria
          /// </summary>
          public string Label { get; }
          #endregion
@@ -177,12 +175,12 @@ namespace OnnxObjectDetection
          /// <summary>
          /// Costruttore
          /// </summary>
-         /// <param name="bbox">Bounding box</param>
+         /// <param name="box">Bounding box</param>
          /// <param name="label">Label</param>
          /// <param name="confidence">Punteggio</param>
-         public Result(float[] bbox, string label, float confidence)
+         public Result(RectangleF box, string label, float confidence)
          {
-            BBox = bbox;
+            Box = box;
             Label = label;
             Confidence = confidence;
          }

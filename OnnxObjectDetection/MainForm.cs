@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -42,7 +43,36 @@ namespace OnnxObjectDetection
             return;
          var bmp = new Bitmap(Image.FromFile(openFileDialog.FileName));
          var prediction = model.Predictor.Predict(new PredictionData { Image = bmp });
-         var r = prediction.GetResults(new[] { "Carp" }, bmp);
+         DrawObjectOnBitmap(bmp, prediction.GetResults(new[] { "Carp" }, bmp));
+         pictureBox.Image = bmp;
+      }
+      /// <summary>
+      /// Marca l'immagine
+      /// </summary>
+      /// <param name="bmp">Bitmap da marcare</param>
+      /// <param name="results">Risultati</param>
+      private static void DrawObjectOnBitmap(Bitmap bmp, IEnumerable<PredictionResult.Result> results)
+      {
+         using var graphic = Graphics.FromImage(bmp); graphic.SmoothingMode = SmoothingMode.AntiAlias;
+         foreach (var result in results) {
+            var rect = new Rectangle(
+               (int)(result.Box.Left),
+               (int)(result.Box.Top),
+               (int)(result.Box.Width),
+               (int)(result.Box.Height));
+            using var pen = new Pen(Color.Lime, Math.Max(Math.Min(rect.Width, rect.Height) / 320f, 1f));
+            graphic.DrawRectangle(pen, rect);
+            var fontSize = Math.Min(bmp.Size.Width, bmp.Size.Height) / 40f;
+            fontSize = Math.Max(fontSize, 8f);
+            fontSize = Math.Min(fontSize, rect.Height);
+            using var font = new Font("Verdana", fontSize, GraphicsUnit.Pixel);
+            var p = new Point(rect.Left, rect.Top);
+            var text = $"{result.Label}:{(int)(result.Confidence * 100)}";
+            var size = graphic.MeasureString(text, font);
+            using var brush = new SolidBrush(Color.FromArgb(50, Color.Lime));
+            graphic.FillRectangle(brush, p.X, p.Y, size.Width, size.Height);
+            graphic.DrawString(text, font, Brushes.Black, p);
+         }
       }
       /// <summary>
       /// Funzione di caricamento del form
