@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace OnnxObjectDetection
@@ -84,7 +85,36 @@ namespace OnnxObjectDetection
       {
          base.OnLoad(e);
          var ml = new MLContext();
-         model = new(ml, Path.Combine("..", "..", "..", "carp.onnx"));
+         // Crea il task di aggiornamento
+         var msgForm = new Form
+         {
+            FormBorderStyle = FormBorderStyle.None,
+            StartPosition = FormStartPosition.CenterScreen,
+            Size = new Size(200, 50)
+         };
+         msgForm.Controls.Add(new Label
+         {
+            Text = "Preparing the model...",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter,
+         });
+         new Task(async () =>
+         {
+            while (!msgForm.Modal)
+               await Task.Delay(10);
+            await Task.Run(() =>
+            {
+               var onnxPath = Path.Combine("..", "..", "..", "carp.onnx");
+               if (!File.Exists("carp.model.zip") || File.GetLastWriteTime(onnxPath) > File.GetLastWriteTime("carp.model.zip")) {
+                  model = new(ml, onnxPath);
+                  ml.Model.Save(model, ml.Data.LoadFromEnumerable(Array.Empty<PredictionData>()).Schema, "carp.model.zip");
+               }
+               else
+                  model = new(ml, "carp.model.zip");
+            });
+            msgForm.DialogResult = DialogResult.OK;
+         }).RunSynchronously();
+         msgForm.ShowDialog(this);
       }
       #endregion
    }
