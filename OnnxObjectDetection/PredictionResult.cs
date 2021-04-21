@@ -11,29 +11,23 @@ namespace OnnxObjectDetection
    {
       #region Properties
       /// <summary>
-      /// Identity
+      /// Identità 1
       /// </summary>
-      [VectorType()] //@@@ Controllare se e' eliminabile
+      [VectorType()]
       [ColumnName("output1")]
       public float[] Output1 { get; set; }
       /// <summary>
-      /// Identity1
+      /// Identità 2
       /// </summary>
       [VectorType()]
       [ColumnName("output2")]
       public float[] Output2 { get; set; }
       /// <summary>
-      /// Identity2
+      /// Identità 3
       /// </summary>
       [VectorType()]
       [ColumnName("output3")]
       public float[] Output3 { get; set; }
-      /// <summary>
-      /// Bitmap ridimensionato
-      /// </summary>
-      [ColumnName("image")]
-      [ImageType(640, 640)]
-      public Bitmap Image { get; set; }
       /// <summary>
       /// Larghezza immagine
       /// </summary>
@@ -44,6 +38,16 @@ namespace OnnxObjectDetection
       /// </summary>
       [ColumnName("height")]
       public float ImageHeight { get; set; }
+      /// <summary>
+      /// Larghezza immagine del modello
+      /// </summary>
+      [ColumnName("ModelWidth")]
+      public float ModelWidth { get; set; }
+      /// <summary>
+      /// Altezza immagine del modello
+      /// </summary>
+      [ColumnName("ModelHeight")]
+      public float ModelHeight { get; set; }
       #endregion
       #region Methods
       /// <summary>
@@ -58,7 +62,7 @@ namespace OnnxObjectDetection
          // Risultato
          var results = new List<Result>();
          // Fattori di scala
-         var (xGain, yGain) = (Image.Width / ImageWidth, Image.Height / ImageHeight);
+         var (xGain, yGain) = (ModelWidth / ImageWidth, ModelHeight / ImageHeight);
          // Elenco di output del modello
          var outputs = new[] { Output1, Output2, Output3 };
          // Shapes dei singoli otuput

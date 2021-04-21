@@ -34,11 +34,15 @@ namespace OnnxObjectDetection
       /// <param name="e"></param>
       private void buttonLoad_Click(object sender, EventArgs e)
       {
+         // Apertura dialog di caricamento file
          if (openFileDialog.ShowDialog(this) != DialogResult.OK)
             return;
-         var bmp = new Bitmap(Image.FromFile(openFileDialog.FileName));
+         // Previsione
          var prediction = model.Predictor.Predict(new PredictionData { ImagePath = openFileDialog.FileName });
+         // Disegna i riquadri e il punteggio sullímmagine
+         var bmp = new Bitmap(Image.FromFile(openFileDialog.FileName));
          DrawObjectOnBitmap(bmp, prediction.GetResults());
+         // Visualizza l'immagine
          pictureBox.Image = bmp;
       }
       /// <summary>
@@ -80,7 +84,7 @@ namespace OnnxObjectDetection
       {
          base.OnLoad(e);
          var ml = new MLContext();
-         model = new(ml, Path.Combine("..", "..", "..", "carp.onnx"), 640, 640);
+         model = new(ml, Path.Combine("..", "..", "..", "carp.onnx"));
       }
       #endregion
    }
