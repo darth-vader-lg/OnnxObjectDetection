@@ -102,15 +102,17 @@ namespace OnnxObjectDetection
          {
             while (!msgForm.Modal)
                await Task.Delay(10);
+            var onnxModelName = "carp.onnx";
             await Task.Run(() =>
             {
-               var onnxPath = Path.Combine("..", "..", "..", "carp.onnx");
-               if (!File.Exists("carp.model.zip") || File.GetLastWriteTime(onnxPath) > File.GetLastWriteTime("carp.model.zip")) {
+               var onnxPath = Path.Combine("..", "..", "..", onnxModelName);
+               var zipPath = Path.GetFileNameWithoutExtension(onnxPath) + ".model.zip";
+               if (!File.Exists(zipPath) || File.GetLastWriteTime(onnxPath) > File.GetLastWriteTime(zipPath)) {
                   model = new(ml, onnxPath);
-                  ml.Model.Save(model, ml.Data.LoadFromEnumerable(Array.Empty<PredictionData>()).Schema, "carp.model.zip");
+                  ml.Model.Save(model, ml.Data.LoadFromEnumerable(Array.Empty<PredictionData>()).Schema, zipPath);
                }
                else
-                  model = new(ml, "carp.model.zip");
+                  model = new(ml, zipPath);
             });
             msgForm.DialogResult = DialogResult.OK;
          }).RunSynchronously();

@@ -1,5 +1,4 @@
 ﻿using Microsoft.ML.Data;
-using Microsoft.ML.Transforms.Image;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -53,10 +52,10 @@ namespace OnnxObjectDetection
       /// <summary>
       /// Parses net output to predictions.
       /// </summary>
-      /// <param name="categories">Elenco di categorie</param>
       /// <param name="confidence">Accuratezza minima della previsione</param>
       /// <param name="perCategoryConfidence">Accuratezza minima per categoria</param>
       /// <param name="nmsOverlapRatio">Filtro per la rimozione delle previsioni sovrapposte (rapporto fra le aree di sovrapposizione)</param>
+      /// <returns>La lista di risultati</returns>
       public IReadOnlyList<Result> GetResults(float confidence = 0.2f, float perCategoryConfidence = 0.25f, float nmsOverlapRatio = 0.45f)
       {
          // Risultato
